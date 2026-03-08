@@ -77,6 +77,23 @@ The configuration file includes an `acl` section to manage permissions:
 - **`user`**: The username from your `auth_file`. Use `*` for all users.
 - **`locks`**: List of IDs or `*` for all.
 
+## Lock Types
+
+The system supports three lock types to match different hardware:
+
+1.  **`TOGGLE`**: Standard smart locks (e.g., front doors).
+    - Supports `LOCK` and `UNLOCK`.
+    - Shows "Open" or "Closed" status.
+    - Mobile App: Shows two buttons (**NYIT** / **ZÁR**).
+2.  **`STRIKE`**: Electric strikes (e.g., intercom latches).
+    - Supports a single pulse command (internally `UNLOCK`).
+    - Behavior: Merely releases the latch for a few seconds.
+    - Mobile App: Shows one button (**NYITÁS** / **OPEN**).
+3.  **`PULSE`**: Gate or garage door openers (pulse-based toggle).
+    - Supports a single pulse command (internally `UNLOCK`).
+    - Behavior: The same button is used to both start opening and start closing.
+    - Mobile App: Shows one button (**GOMB** / **TRIGGER**).
+
 ## Generating API Keys
 Use the built-in tool to generate a new key for a user:
 ```bash

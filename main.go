@@ -32,7 +32,7 @@ const userContextKey contextKey = "user"
 type LockConfig struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
-	Type       string `json:"type"`        // TOGGLE / OPEN
+	Type       string `json:"type"`        // TOGGLE / STRIKE / PULSE
 	HasBattery bool   `json:"has_battery"` // true / false
 }
 
@@ -331,9 +331,9 @@ func (s *Server) handleCmd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Guard: no LOCK for OPEN type
-	if targetLock.Type == "OPEN" && cmd == "LOCK" {
-		http.Error(w, "LOCK not supported for OPEN type", http.StatusBadRequest)
+	// Guard: no LOCK for non-TOGGLE types (STRIKE, PULSE, OPEN)
+	if targetLock.Type != "TOGGLE" && cmd == "LOCK" {
+		http.Error(w, "LOCK not supported for this type", http.StatusBadRequest)
 		return
 	}
 
