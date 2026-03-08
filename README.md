@@ -94,14 +94,35 @@ The system supports three lock types to match different hardware:
     - Behavior: The same button is used to both start opening and start closing.
     - Mobile App: Shows one button (**GOMB** / **TRIGGER**).
 
+## Configuration Helpers
+
+The `lockd2` binary includes tools to help you set up the configuration file (`lockd2.json`):
+
+### Base64 Encoding
+MQTT brokers often require Base64 encoded credentials in the config. Use the `-encode` flag to generate them:
+```bash
+lockd2 -encode "your_password"
+# Output: eW91cl9wYXNzd29yZA==
+```
+Copy the output into the `username` or `password` fields of your `lockd2.json`.
+
+---
+
 ## Generating API Keys
 Use the built-in tool to generate a new key for a user:
 ```bash
-lockd2 -gen-key <username>
+lockd2 -gen-key marci
 ```
+
+### Step-by-Step Example:
+1. **Run the command**: `lockd2 -gen-key marci`
+2. **Copy the "Raw Key"**: It looks like a long string of numbers and letters. Paste this into the **Lockd2 Mobile App** (or Windows app) when it asks for the API Key.
+3. **Copy the "Auth Line"**: It looks like `marci:a1b2c3d4...`.
+4. **Update the server**: Open your `auth_keys` file (usually `/etc/lockd/auth_keys`) and paste the **Auth Line** at the end of the file on a new line.
+5. **Reload (Optional)**: If the server is already running, send a `SIGHUP` signal to reload the keys: `pkill -HUP lockd2`.
+
 **Important:**
-- The **Raw Key** output by this command is what the user must enter in the **[Lockd2 Mobile App](https://github.com/MarciPain/lockd2)**.
-- The **Auth Line** must be added to your server's `auth_keys` file (specified in `lockd2.json`).
+- If you haven't created the `auth_keys` file yet, the server will create it automatically (empty) upon first run.
 
 ## Client App
 This backend is designed to work with the **[Lockd2 Mobile App](https://github.com/MarciPain/lockd2)**. The app will automatically sync the list of locks based on the ACL permissions defined for the user.

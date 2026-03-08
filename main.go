@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -352,9 +353,9 @@ func (s *Server) handleCmd(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var (
-		cfgPath = flag.String("config", "/etc/lockd2.json", "Config path")
-		encode  = flag.String("encode", "", "B64 encode and exit")
-		genKey  = flag.String("gen-key", "", "Gen key for user and exit")
+		cfgPath = flag.String("config", "/etc/lockd2.json", "Path to the JSON configuration file")
+		encode  = flag.String("encode", "", "Helper to Base64 encode a string (useful for MQTT username/password in config)")
+		genKey  = flag.String("gen-key", "", "Generate a new API key for a 'username' (outputs raw key for app and hash for auth_keys)")
 	)
 	flag.Parse()
 
@@ -370,12 +371,29 @@ func main() {
 		// correcting the above:
 		hRaw := sha256.Sum256([]byte(key))
 		hash = hex.EncodeToString(hRaw[:])
-		fmt.Printf("User: %s\nRaw Key: %s\nAuth Line: %s:%s\n", *genKey, key, *genKey, hash)
+		fmt.Println("--- NEW API KEY GENERATED ---")
+		fmt.Printf("User: %s\n", *genKey)
+		fmt.Printf("Raw Key: %s  <-- COPY THIS into the Mobile App\n", key)
+		fmt.Printf("Auth Line: %s:%s  <-- APPEND THIS to your 'auth_keys' file\n", *genKey, hash)
+		fmt.Println("-----------------------------")
 		return
 	}
 
 	cfg, err := loadConfig(*cfgPath)
 	if err != nil { log.Fatalf("config error: %v", err) }
+
+	// Ensure AuthFile exists (create dir and file if missing)
+	if cfg.HTTP.AuthFile != "" {
+		_ = os.MkdirAll(filepath.Dir(cfg.HTTP.AuthFile), 0755)
+		if _, err := os.Stat(cfg.HTTP.AuthFile); os.IsNotExist(err) {
+			log.Printf("Auth file missing, creating: %s", cfg.HTTP.AuthFile)
+			_ = os.WriteFile(cfg.HTTP.AuthFile, []byte("# lockd2 auth keys\n"), 0600)
+		}
+	}
+	// Ensure AuditFile directory exists
+	if cfg.HTTP.AuditFile != "" {
+		_ = os.MkdirAll(filepath.Dir(cfg.HTTP.AuditFile), 0755)
+	}
 
 	s := &Server{
 		cfg:   cfg,
