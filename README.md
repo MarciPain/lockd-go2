@@ -77,6 +77,26 @@ The configuration file includes an `acl` section to manage permissions:
 - **`user`**: The username from your `auth_file`. Use `*` for all users.
 - **`locks`**: List of IDs or `*` for all.
 
+---
+
+### HTTPS / TLS Configuration (ACME / Let's Encrypt)
+To enable secure communication, add your certificate files to the `http` section:
+```json
+"http": {
+    "listen": "0.0.0.0:443",
+    "cert_file": "/etc/letsencrypt/live/domain.com/fullchain.pem",
+    "key_file": "/etc/letsencrypt/live/domain.com/privkey.pem"
+}
+```
+If both `cert_file` and `key_file` are provided, the server will start in **HTTPS** mode. Otherwise, it defaults to plain **HTTP**.
+
+#### Automatic Certificate Renewal (ACME/Certbot)
+If you use Certbot, you can automatically reload the certificates without restarting the server by adding a `post-hook`:
+```bash
+certbot renew --post-hook "pkill -HUP lockd2"
+```
+The server handles the `SIGHUP` signal to reload both the configuration and the TLS certificates from disk.
+
 ## Lock Types
 
 The system supports three lock types to match different hardware:

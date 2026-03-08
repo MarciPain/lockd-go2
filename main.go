@@ -56,6 +56,8 @@ type Config struct {
 		Listen    string `json:"listen"`     // 127.0.0.1:8884
 		AuthFile  string `json:"auth_file"`  // /etc/lockd/auth_keys
 		AuditFile string `json:"audit_file"` // /etc/lockd/audit.log
+		CertFile  string `json:"cert_file"`  // path to cert
+		KeyFile   string `json:"key_file"`   // path to key
 	} `json:"http"`
 	Locks []LockConfig `json:"locks"`
 	ACL   []ACLRule    `json:"acl"`
@@ -76,10 +78,11 @@ type LockResponse struct {
 }
 
 type Server struct {
-	cfg   Config
-	mc    mqtt.Client
-	mu    sync.RWMutex
-	state map[string]State
+	cfg     Config
+	mc      mqtt.Client
+	mu      sync.RWMutex
+	state   map[string]State
+	tlsCert *tls.Certificate // Cached certificate for reloading
 }
 
 func decodeB64(s string) string {
@@ -156,6 +159,36 @@ func (s *Server) updateStateFromTopic(topic, payload string) {
 
 	st.UpdatedAt = time.Now()
 	s.state[lockID] = st
+}
+
+func (s *Server) reloadCert() error {
+	s.mu.RLock()
+	certFile := s.cfg.HTTP.CertFile
+	keyFile := s.cfg.HTTP.KeyFile
+	s.mu.RUnlock()
+
+	if certFile == "" || keyFile == "" {
+		return nil
+	}
+
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	s.tlsCert = &cert
+	s.mu.Unlock()
+	return nil
+}
+
+func (s *Server) getCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.tlsCert == nil {
+		return nil, errors.New("no certificate loaded")
+	}
+	return s.tlsCert, nil
 }
 
 func (s *Server) mqttConnect() {
@@ -420,14 +453,29 @@ func main() {
 
 	mux.Handle("/v1/", s.auth(api))
 
-	srv := &http.Server{Addr: cfg.HTTP.Listen, Handler: mux}
+	tlsCfg := &tls.Config{
+		GetCertificate: s.getCertificate,
+		MinVersion:     tls.VersionTLS12,
+	}
+	srv := &http.Server{
+		Addr:      cfg.HTTP.Listen,
+		Handler:   mux,
+		TLSConfig: tlsCfg,
+	}
+
+	// Initial cert load
+	if cfg.HTTP.CertFile != "" && cfg.HTTP.KeyFile != "" {
+		if err := s.reloadCert(); err != nil {
+			log.Fatalf("initial cert load failed: %v", err)
+		}
+	}
 
 	// SIGHUP Reload
 	go func() {
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGHUP)
 		for range sig {
-			log.Printf("SIGHUP received, reloading config...")
+			log.Printf("SIGHUP received, reloading config and certificates...")
 			newCfg, err := loadConfig(*cfgPath)
 			if err != nil {
 				log.Printf("reload failed: %v", err)
@@ -436,14 +484,29 @@ func main() {
 			s.mu.Lock()
 			s.cfg = newCfg
 			s.mu.Unlock()
+
+			if newCfg.HTTP.CertFile != "" && newCfg.HTTP.KeyFile != "" {
+				if err := s.reloadCert(); err != nil {
+					log.Printf("cert reload failed: %v", err)
+				} else {
+					log.Printf("certificates reloaded")
+				}
+			}
 			log.Printf("config reloaded")
 		}
 	}()
 
 	go func() {
-		log.Printf("HTTP listening on %s", cfg.HTTP.Listen)
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("server failed: %v", err)
+		if cfg.HTTP.CertFile != "" && cfg.HTTP.KeyFile != "" {
+			log.Printf("HTTPS listening on %s (dynamic reload enabled)", cfg.HTTP.Listen)
+			if err := srv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Fatalf("https server failed: %v", err)
+			}
+		} else {
+			log.Printf("HTTP listening on %s (WARNING: plain HTTP)", cfg.HTTP.Listen)
+			if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Fatalf("http server failed: %v", err)
+			}
 		}
 	}()
 

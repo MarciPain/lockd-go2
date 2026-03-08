@@ -13,7 +13,9 @@
     "http": {
         "listen": "127.0.0.1:8884",
         "auth_file": "/etc/lockd/auth_keys",
-        "audit_file": "/etc/lockd/audit.log"
+        "audit_file": "/etc/lockd/audit.log",
+        "cert_file": "/etc/letsencrypt/live/yourdomain.com/fullchain.pem",
+        "key_file": "/etc/letsencrypt/live/yourdomain.com/privkey.pem"
     },
     "locks": [
         {
