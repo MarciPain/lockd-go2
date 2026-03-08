@@ -105,7 +105,7 @@ The system supports three lock types to match different hardware:
     - Supports `LOCK` and `UNLOCK`.
     - Shows "Open" or "Closed" status.
     - Mobile App: Shows two buttons (**NYIT** / **ZÁR**).
-2.  **`STRIKE`**: Electric strikes (e.g., intercom latches).
+2.  **`STRIKE`** or **`OPEN`**: Electric strikes and simple gates (e.g., intercom latches).
     - Supports a single pulse command (internally `UNLOCK`).
     - Behavior: Merely releases the latch for a few seconds.
     - Mobile App: Shows one button (**NYITÁS** / **OPEN**).
