@@ -78,8 +78,13 @@ The configuration file includes an `acl` section to manage permissions:
 - **`locks`**: List of IDs or `*` for all.
 
 ## Generating API Keys
-Use the built-in tool:
+Use the built-in tool to generate a new key for a user:
 ```bash
 lockd2 -gen-key <username>
 ```
-Follow the output instructions to add the hash to your auth file.
+**Important:**
+- The **Raw Key** output by this command is what the user must enter in the **[Lockd2 Mobile App](https://github.com/MarciPain/lockd2)**.
+- The **Auth Line** must be added to your server's `auth_keys` file (specified in `lockd2.json`).
+
+## Client App
+This backend is designed to work with the **[Lockd2 Mobile App](https://github.com/MarciPain/lockd2)**. The app will automatically sync the list of locks based on the ACL permissions defined for the user.
