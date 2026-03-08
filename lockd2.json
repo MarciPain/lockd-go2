@@ -1,0 +1,53 @@
+{
+    "mqtt": {
+        "broker": "127.0.0.1",
+        "port": 8883,
+        "username": "bG9ja2Q=",
+        "password": "REPLACE_WITH_BASE64_PASSWORD",
+        "ca_file": "/etc/mosquitto/certs/ca.crt",
+        "client_id": "lockd-new-panel",
+        "topic_state": "locks/+/state",
+        "topic_batt": "locks/+/batt",
+        "topic_cmd_tpl": "locks/%s/cmd"
+    },
+    "http": {
+        "listen": "127.0.0.1:8884",
+        "auth_file": "/etc/lockd/auth_keys",
+        "audit_file": "/etc/lockd/audit.log"
+    },
+    "locks": [
+        {
+            "id": "front",
+            "name": "Bejárati ajtó",
+            "type": "TOGGLE",
+            "has_battery": true
+        },
+        {
+            "id": "back",
+            "name": "Hátsó ajtó",
+            "type": "TOGGLE",
+            "has_battery": true
+        },
+        {
+            "id": "gate",
+            "name": "Nagykapu",
+            "type": "OPEN",
+            "has_battery": false
+        }
+    ],
+    "acl": [
+        {
+            "user": "admin",
+            "locks": [
+                "*"
+            ]
+        },
+        {
+            "user": "marci",
+            "locks": [
+                "front",
+                "gate"
+            ]
+        }
+    ]
+}
