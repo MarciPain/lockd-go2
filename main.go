@@ -13,12 +13,10 @@ import (
 	"flag"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -345,7 +343,7 @@ func (s *Server) handleCmd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, _ := r.Context().Value(userContextKey).(string)
+	// Audit log using the user we already extracted
 	s.auditLog(user, id, cmd)
 
 	w.Header().Set("Content-Type", "application/json")
