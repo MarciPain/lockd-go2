@@ -447,7 +447,36 @@ func main() {
 	api := http.NewServeMux()
 	api.HandleFunc("/v1/locks", s.handleLocks)
 	api.HandleFunc("/v1/locks/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/cmd") { s.handleCmd(w, r); return }
+		// e.g. /v1/locks/frontdoor/cmd
+		if strings.HasSuffix(r.URL.Path, "/cmd") { 
+			s.handleCmd(w, r)
+			return 
+		}
+		
+		// e.g. GET /v1/locks/frontdoor
+		if r.Method == http.MethodGet {
+			id := strings.TrimPrefix(r.URL.Path, "/v1/locks/")
+			id = strings.Trim(id, "/")
+			
+			user, _ := r.Context().Value(userContextKey).(string)
+			if !s.canAccess(user, id) {
+				http.Error(w, "access denied", http.StatusForbidden)
+				return
+			}
+			
+			s.mu.RLock()
+			defer s.mu.RUnlock()
+			stateRec, ok := s.mem[id]
+			if !ok {
+				http.Error(w, "unknown lock", http.StatusNotFound)
+				return
+			}
+			
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(stateRec)
+			return
+		}
+
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	})
 
