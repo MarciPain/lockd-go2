@@ -466,7 +466,7 @@ func main() {
 			
 			s.mu.RLock()
 			defer s.mu.RUnlock()
-			stateRec, ok := s.mem[id]
+			stateRec, ok := s.state[id]
 			if !ok {
 				http.Error(w, "unknown lock", http.StatusNotFound)
 				return
