@@ -144,5 +144,9 @@ lockd2 -gen-key marci
 **Important:**
 - If you haven't created the `auth_keys` file yet, the server will create it automatically (empty) upon first run.
 
+## Related Projects
+- **[Lockd2 Mobile App](https://github.com/MarciPain/lockd2)**: Flutter application for controlling these locks.
+- **[Home Assistant Addon](https://github.com/MarciPain/hass-lockd2-addon)**: Integrate Lockd2 into your Home Assistant setup.
+
 ## Client App
 This backend is designed to work with the **[Lockd2 Mobile App](https://github.com/MarciPain/lockd2)**. The app will automatically sync the list of locks based on the ACL permissions defined for the user.
